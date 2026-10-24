@@ -1,6 +1,6 @@
 {
   "name": "tbh-cli",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "TeleBotHost CLI - deploy and pull TBL command projects from any folder",
   "author": "nepcoder (https://t.me/nepcoder)",
   "license": "MIT",

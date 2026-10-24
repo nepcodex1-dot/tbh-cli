@@ -34,14 +34,18 @@ manifest.json  ──►  plan (create / update / same)  ──►  POST/PATCH /
 Like Wrangler: install it once, then use `tbh` from **any** folder.
 
 ```bash
-# globally, straight from GitHub — no npm publish needed
-npm i -g github:nepcodex1-dot/tbh-cli
+npm i -g tbh-cli        # once, globally
+npx tbh-cli deploy      # or run it without installing
+```
 
-# or run one command without installing anything
+From GitHub (tracks the newest commit):
+
+```bash
+npm i -g github:nepcodex1-dot/tbh-cli
 npx github:nepcodex1-dot/tbh-cli deploy
 ```
 
-From a local clone instead:
+From a local clone:
 
 ```bash
 git clone https://github.com/nepcodex1-dot/tbh-cli.git
@@ -52,11 +56,8 @@ npm link          # exposes `tbh` on your PATH
 There are **no dependencies and no build step** — Node 18+ is all it needs.
 
 ```bash
-tbh --version     # 1.5.0
+tbh --version     # 1.5.1
 ```
-
-> Once the package is published to the npm registry, the short form works too:
-> `npm i -g tbh-cli` and `npx tbh-cli deploy`.
 
 ---
 
@@ -226,7 +227,7 @@ and deploy later.
 
 ```bash
 # once
-npm i -g github:nepcodex1-dot/tbh-cli
+npm i -g tbh-cli
 
 tbh login                  # paste the sk_… key (hidden), it is verified and saved
 tbh ui                     # or do everything in the browser instead

@@ -234,8 +234,7 @@ function help(ctx) {
   io.out("  " + io.c.muted("api") + "     " + io.c.faint(ctx ? ctx.base : config.DEFAULT_BASE));
   io.out("  " + io.c.muted("made by") + " " + io.c.accent(CREDIT));
   io.out("");
-  io.out("  " + io.c.muted("Install globally: ") + io.c.brand("npm i -g github:nepcodex1-dot/tbh-cli"));
-  io.out("  " + io.c.muted("Try without installing: ") + io.c.brand("npx github:nepcodex1-dot/tbh-cli deploy"));
+  io.out("  " + io.c.muted("Install: ") + io.c.brand("npm i -g tbh-cli") + io.c.faint("   (or npx tbh-cli deploy)"));
   io.out("");
 }
 
