@@ -1,8 +1,18 @@
 # tbh-cli
 
+[![npm version](https://img.shields.io/npm/v/tbh-cli.svg)](https://www.npmjs.com/package/tbh-cli)
+[![npm downloads](https://img.shields.io/npm/dm/tbh-cli.svg)](https://www.npmjs.com/package/tbh-cli)
+[![license](https://img.shields.io/npm/l/tbh-cli.svg)](https://github.com/nepcodex1-dot/tbh-cli/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/tbh-cli.svg)](https://www.npmjs.com/package/tbh-cli)
+
 A dependency-free Node.js CLI for **TeleBotHost**. It signs in with a Developer API
 key and deploys a TBL command project (any folder with a `manifest.json`) straight
 into a live bot.
+
+```bash
+npx tbh-cli help        # no install needed
+npm i -g tbh-cli        # or install once, use `tbh` anywhere
+```
 
 Built against the TeleBotHost OpenAPI 3.0.3 spec (`api.json` · `https://api.telebothost.com/api/v1`).
 
