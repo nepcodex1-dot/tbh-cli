@@ -134,6 +134,20 @@ function countWrites(client) {
   return client.calls.filter(function (c) { return c.method !== "GET"; }).length;
 }
 
+/* A tiny valid project: one command, no folders. */
+function makeTempProject(name) {
+  const root = path.join(TMP, name);
+  fs.mkdirSync(path.join(root, "commands"), { recursive: true });
+  fs.writeFileSync(path.join(root, "manifest.json"), JSON.stringify({
+    bot: name,
+    commands: [
+      { name: "/start", code_file: "commands/start.js" }
+    ]
+  }, null, 2));
+  fs.writeFileSync(path.join(root, "commands", "start.js"), "Bot.sendMessage('hello from " + name + "');\n");
+  return root;
+}
+
 async function main() {
   process.stdout.write("\ntbh-cli tests\n\n");
 
@@ -622,6 +636,65 @@ async function main() {
     assert.strictEqual(newBot.looksLikeBotToken("123456789:AAH-abcdefghijklmnop"), true);
     assert.strictEqual(newBot.looksLikeBotToken("hello"), false);
     assert.strictEqual(newBot.maskToken("123456789:AAHsecretvalue"), "123456789:••••••••alue");
+  });
+
+  await test("project: finds the root from a nested folder", function () {
+    const root = makeTempProject("nested-proj");
+    const deep = path.join(root, "commands", "a", "b");
+    fs.mkdirSync(deep, { recursive: true });
+
+    assert.strictEqual(project.findRoot(deep), root);
+    const proj = project.loadProject(deep);
+    assert.strictEqual(proj.root, root);
+    assert.strictEqual(proj.entries.length, 1);
+  });
+
+  await test("link: remembers a project and deploy uses it from anywhere", async function () {
+    const linkCmd = require("../src/commands/link");
+    const cmds = require("../src/commands/commands");
+
+    const root = makeTempProject("linked-proj");
+    const nested = path.join(root, "commands");
+    const quietCtx = { flags: {}, json: true };
+
+    /* Link resolves upward to the manifest and saves the root. */
+    const linked = linkCmd.run(quietCtx, nested);
+    assert.strictEqual(linked.ok, true);
+    assert.strictEqual(linked.project, root);
+    assert.strictEqual(config.load().project_dir, root);
+
+    /* Run from an unrelated folder with no manifest anywhere above it. */
+    const elsewhere = path.join(TMP, "elsewhere");
+    fs.mkdirSync(elsewhere, { recursive: true });
+    const cwd = process.cwd();
+    const client = fakeClient();
+
+    try {
+      process.chdir(elsewhere);
+      const ctx = makeCtx(client, { dir: undefined });
+      await cmds.deploy(ctx);
+    } finally {
+      process.chdir(cwd);
+    }
+
+    assert.ok(client.store.has("/start"), "linked project was deployed");
+    assert.strictEqual(client.store.size, 1);
+    assert.strictEqual(config.load().project_dir, root, "resolution is remembered");
+
+    /* Unlink forgets it. */
+    const removed = linkCmd.unlink(quietCtx);
+    assert.strictEqual(removed.removed, true);
+    assert.strictEqual(config.load().project_dir, undefined);
+  });
+
+  await test("link: refuses a folder without manifest.json", async function () {
+    const linkCmd = require("../src/commands/link");
+    const empty = path.join(TMP, "empty-dir");
+    fs.mkdirSync(empty, { recursive: true });
+
+    assert.throws(function () {
+      linkCmd.run({ flags: {}, json: true }, empty);
+    }, /No manifest\.json/);
   });
 
   process.stdout.write("\n" + passed + " passed, " + failed + " failed\n\n");

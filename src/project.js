@@ -25,7 +25,8 @@ function loadProject(startDir) {
   if (!root) {
     const err = new Error(
       "No manifest.json found in " + path.resolve(startDir || process.cwd()) +
-      " or its parents. Run inside a project folder or pass --dir <path>."
+      " or its parents.\n" +
+      "  Run inside a project folder, pass --dir <path>, or link one with `tbh link <path>`."
     );
     err.code = "NO_PROJECT";
     throw err;

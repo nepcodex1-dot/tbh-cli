@@ -10,7 +10,6 @@
 const io = require("../io");
 const api = require("../api");
 const config = require("../config");
-const project = require("../project");
 const cmds = require("./commands");
 const wait = require("../wait");
 
@@ -102,7 +101,7 @@ async function run(ctx) {
   const client = ctx.ensure();
 
   /* Load the project first: a broken manifest must fail before a bot exists. */
-  const proj = project.loadProject(ctx.flags.dir);
+  const proj = cmds.loadProjectForCtx(ctx);
 
   if (ctx.json) process.env.TBH_QUIET = "1";
 

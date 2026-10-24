@@ -6,7 +6,6 @@ const io = require("../io");
 const config = require("../config");
 const http = require("../http");
 const api = require("../api");
-const project = require("../project");
 const bots = require("./bots");
 
 /* ------------------------------------------------------------------ */
@@ -298,11 +297,12 @@ async function doctor(ctx) {
 
   let proj = null;
   try {
-    proj = project.loadProject(ctx.flags.dir);
+    /* Same resolution as deploy: --dir, then upward search, then `tbh link`. */
+    proj = require("./commands").loadProjectForCtx(ctx);
     add("project", proj.root, true);
     add("commands", proj.entries.length + " in manifest", proj.entries.length > 0);
   } catch (e) {
-    add("project", "not found", false, "run inside a folder with manifest.json");
+    add("project", "not found", false, "run inside a project or use `tbh link <path>`");
   }
 
   if (ctx.key) {

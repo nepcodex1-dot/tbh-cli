@@ -12,6 +12,7 @@ const ops = require("./commands/ops");
 const cfgCmd = require("./commands/config");
 const uiCmd = require("./commands/ui");
 const newBot = require("./commands/newbot");
+const linkCmd = require("./commands/link");
 
 const VERSION = require("../package.json").version;
 
@@ -180,13 +181,18 @@ function help(ctx) {
   io.out("");
 
   io.out("  " + io.c.bold("DEPLOY") + "  " + io.c.muted("(project = folder with manifest.json)"));
-  row("deploy [dir]", "Create or update all commands", "idempotent, --bot <id> to pick the bot");
+  row("deploy [dir]", "Create or update all commands", "works from any folder after `tbh link`");
   row("new [dir]", "Register a bot, deploy, and start it", "asks for the BotFather token");
   row("diff [dir]", "Preview what deploy would change");
   row("pull", "Download the bot's commands into ./pulled");
   row("ls", "List the commands on the bot");
   row("get <name|id>", "Print one command's code");
   row("rm <name|id>", "Delete one command");
+  io.out("");
+
+  io.out("  " + io.c.bold("PROJECT"));
+  row("link [path]", "Remember a project folder", "no key needed");
+  row("unlink", "Forget the linked project");
   io.out("");
 
   io.out("  " + io.c.bold("OPS"));
@@ -227,6 +233,9 @@ function help(ctx) {
       : io.c.warn("not signed in") + io.c.faint("  run `tbh login`")));
   io.out("  " + io.c.muted("api") + "     " + io.c.faint(ctx ? ctx.base : config.DEFAULT_BASE));
   io.out("  " + io.c.muted("made by") + " " + io.c.accent(CREDIT));
+  io.out("");
+  io.out("  " + io.c.muted("Install globally: ") + io.c.brand("npm i -g github:nepcodex1-dot/tbh-cli"));
+  io.out("  " + io.c.muted("Try without installing: ") + io.c.brand("npx github:nepcodex1-dot/tbh-cli deploy"));
   io.out("");
 }
 
@@ -334,6 +343,10 @@ async function main(argv) {
     case "diff":
       if (!flags.dir && rest[0]) flags.dir = rest[0];
       return cmds.diff(ctx);
+    case "link":
+      return linkCmd.run(ctx, rest[0]);
+    case "unlink":
+      return linkCmd.unlink(ctx);
     case "pull":
       return cmds.pull(ctx);
     case "ls":
@@ -372,7 +385,7 @@ function suggest(word) {
   const names = [
     "login", "logout", "whoami", "config", "bots", "use", "status", "start", "stop",
     "deploy", "new", "diff", "pull", "ls", "get", "rm", "logs", "analytics", "export",
-    "env", "doctor", "ui", "help"
+    "env", "doctor", "ui", "link", "unlink", "help"
   ];
   const w = String(word).toLowerCase();
 

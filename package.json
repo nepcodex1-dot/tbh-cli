@@ -1,7 +1,7 @@
-﻿{
+{
   "name": "tbh-cli",
-  "version": "1.4.0",
-  "description": "TeleBotHost CLI - deploy and pull TBL command projects",
+  "version": "1.5.0",
+  "description": "TeleBotHost CLI - deploy and pull TBL command projects from any folder",
   "author": "nepcoder (https://t.me/nepcoder)",
   "license": "MIT",
   "type": "commonjs",
@@ -9,11 +9,38 @@
     "tbh": "bin/tbh.js"
   },
   "main": "src/cli.js",
+  "files": [
+    "bin/",
+    "src/",
+    "tbhai.md",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18"
   },
+  "preferGlobal": true,
   "scripts": {
     "tbh": "node bin/tbh.js",
     "test": "node test/run.js"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nepcodex1-dot/tbh-cli.git"
+  },
+  "homepage": "https://github.com/nepcodex1-dot/tbh-cli#readme",
+  "bugs": {
+    "url": "https://github.com/nepcodex1-dot/tbh-cli/issues"
+  },
+  "keywords": [
+    "telebothost",
+    "tbh",
+    "tbl",
+    "telegram",
+    "bot",
+    "cli",
+    "deploy",
+    "wrangler-style",
+    "nepcoder"
+  ]
 }

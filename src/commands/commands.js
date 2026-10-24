@@ -5,12 +5,57 @@ const path = require("path");
 
 const io = require("../io");
 const api = require("../api");
+const config = require("../config");
 const project = require("../project");
 const http = require("../http");
 const bots = require("./bots");
 
+/*
+ * Project resolution, in this order:
+ *   1. --dir <path>
+ *   2. manifest.json in the cwd or any parent (works from any sub-folder)
+ *   3. the project remembered by `tbh link` (works from any folder at all)
+ * The root that wins is remembered, so the next `tbh deploy` is instant.
+ */
+function loadProjectForCtx(ctx) {
+  const cfg = config.load();
+  let proj;
+
+  try {
+    proj = project.loadProject(ctx.flags.dir);
+  } catch (e) {
+    if (e.code !== "NO_PROJECT" || !cfg.project_dir) throw e;
+
+    try {
+      proj = project.loadProject(cfg.project_dir);
+    } catch (linkError) {
+      if (linkError.code !== "NO_PROJECT") throw linkError;
+
+      const broken = new Error(
+        "The linked project no longer has a manifest.json:\n" +
+        "  " + cfg.project_dir + "\n" +
+        "  Fix it with `tbh link <path>`, or forget it with `tbh unlink`."
+      );
+      broken.code = "NO_PROJECT";
+      throw broken;
+    }
+
+    if (!ctx.json) {
+      io.note("No manifest.json here — using the linked project");
+      io.note(io.c.accent(proj.root) + io.c.faint("  (change it with `tbh link <path>`)"));
+    }
+  }
+
+  if (proj.root !== cfg.project_dir) {
+    cfg.project_dir = proj.root;
+    config.save(cfg);
+  }
+
+  return proj;
+}
+
 function loadSelected(ctx) {
-  const proj = project.loadProject(ctx.flags.dir);
+  const proj = loadProjectForCtx(ctx);
   let entries = proj.entries;
 
   if (typeof ctx.flags.only === "string" && ctx.flags.only) {
@@ -461,6 +506,7 @@ async function rm(ctx, target) {
 }
 
 module.exports = {
+  loadProjectForCtx: loadProjectForCtx,
   deploy: deploy,
   diff: diff,
   pull: pull,

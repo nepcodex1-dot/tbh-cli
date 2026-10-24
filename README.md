@@ -24,12 +24,24 @@ manifest.json  ──►  plan (create / update / same)  ──►  POST/PATCH /
 
 ## Requirements
 
-- Node.js **18+** (global `fetch`; no npm packages, no install step)
+- Node.js **18+** (global `fetch`; zero dependencies)
 - A TeleBotHost **Developer API key** (`sk_…`) from the console
 
 ---
 
 ## Install
+
+Like Wrangler: install it once, then use `tbh` from **any** folder.
+
+```bash
+# globally, straight from GitHub — no npm publish needed
+npm i -g github:nepcodex1-dot/tbh-cli
+
+# or run one command without installing anything
+npx github:nepcodex1-dot/tbh-cli deploy
+```
+
+From a local clone instead:
 
 ```bash
 git clone https://github.com/nepcodex1-dot/tbh-cli.git
@@ -37,11 +49,50 @@ cd tbh-cli
 npm link          # exposes `tbh` on your PATH
 ```
 
-Without linking, prefix every command with `node`:
+There are **no dependencies and no build step** — Node 18+ is all it needs.
 
 ```bash
-node bin/tbh.js help
+tbh --version     # 1.5.0
 ```
+
+> Once the package is published to the npm registry, the short form works too:
+> `npm i -g tbh-cli` and `npx tbh-cli deploy`.
+
+---
+
+## Run from any folder
+
+`wrangler deploy` works because it finds your project config. `tbh` does the same,
+in three steps:
+
+```bash
+# 1. anywhere at all
+cd ~/Desktop
+
+# 2. point the CLI at the project once
+tbh link ~/projects/movie-bot
+
+# 3. deploy from any folder, forever after
+tbh deploy
+tbh diff
+```
+
+`tbh link` only writes `project_dir` into `~/.tbh/config.json` — no API key is
+needed for it. Undo with:
+
+```bash
+tbh unlink
+```
+
+Project resolution order for `deploy`, `new`, `diff` and `doctor`:
+
+| # | Source | Example |
+|---|---|---|
+| 1 | `--dir` or positional folder | `tbh deploy D:\bots\movie-bot` |
+| 2 | `manifest.json` in the cwd **or any parent** | `cd movie-bot/admin && tbh deploy` |
+| 3 | the project remembered by `tbh link` | `cd ~ && tbh deploy` |
+
+Whichever one wins is saved as the linked project, so the next run is instant.
 
 ---
 
@@ -174,16 +225,17 @@ and deploy later.
 ## Quick start (movie & series bot)
 
 ```bash
-# from the repo root: C:\Users\idkwh\Downloads\savr-files
-cd tbh-cli
-npm link
+# once
+npm i -g github:nepcodex1-dot/tbh-cli
 
 tbh login                  # paste the sk_… key (hidden), it is verified and saved
 tbh ui                     # or do everything in the browser instead
 tbh bots                   # see what is on the account
 tbh use 123456             # optional: set the default bot
-tbh diff movie-bot         # 13 create + folder "admin", 0 writes
-tbh deploy movie-bot       # push all commands to the selected bot
+
+tbh link C:\path\to\movie-bot   # optional: deploy from any folder afterwards
+tbh diff                   # 13 create + folder "admin", 0 writes
+tbh deploy                 # push all commands to the selected bot
 tbh start                  # launch the bot
 tbh logs                   # check the first /start after testing on Telegram
 ```
@@ -191,11 +243,11 @@ tbh logs                   # check the first /start after testing on Telegram
 Brand-new bot, no console visit:
 
 ```bash
-tbh new movie-bot          # asks for the @BotFather token, then: create → deploy → start
+tbh new C:\path\to\movie-bot   # asks for the @BotFather token, then: create → deploy → start
 ```
 
 `movie-bot` is a positional argument; `--dir movie-bot` does the same. If you `cd`
-inside the project folder, no argument is needed.
+inside the project folder (or have run `tbh link`), no argument is needed.
 
 ```
   ▌ Deploy  C:\...\movie-bot  →  bot #42
@@ -313,10 +365,12 @@ selected.
 | `tbh use <id\|@username>` | Sets the default bot |
 | `tbh status` | Details of the selected bot |
 | `tbh start` / `tbh stop` | Launch / stop (`PATCH /bot/{id}` `status: 1\|0`) |
-| `tbh deploy [dir]` | Create/update every command from the manifest |
+| `tbh deploy [dir]` | Create/update every command from the manifest (works from any folder) |
 | `tbh new [dir]` | Register a bot from a BotFather token, deploy, and start it |
 | `tbh diff [dir]` | Same plan, no writes |
 | `tbh pull` | Download remote commands to `./pulled` |
+| `tbh link [path]` | Remember a project folder so `tbh deploy` works anywhere |
+| `tbh unlink` | Forget the linked project |
 | `tbh ls` | List remote commands |
 | `tbh get <name\|id>` | Print one remote command's code |
 | `tbh rm <name\|id>` | Delete one remote command |
@@ -332,7 +386,7 @@ selected.
 
 | Flag | Meaning |
 |---|---|
-| `--dir <path>` | Project folder (searched upward for `manifest.json`) |
+| `--dir <path>` | Project folder (default: cwd, then parents, then `tbh link`) |
 | `--bot <id>` | Override the selected bot for this call (`--id` is the same) |
 | `--key <sk_…>` | Override the stored key for this call |
 | `--dry-run` | Plan only, write nothing |
@@ -461,6 +515,8 @@ editors.
 ## Config and security
 
 - Key stored in `%USERPROFILE%\.tbh\config.json` (`~/.tbh/config.json`), `chmod 600`.
+- The same file remembers the default bot and the `tbh link`-ed project folder
+  (`project_dir`) — no secrets are added by linking.
 - Override the location with `TBH_CONFIG_DIR` (used by the tests).
 - The CLI never prints the full key (`sk_abc…7890`) unless you pass `--reveal`.
 - `tbh logout` and `tbh config reset` only delete the local file — revoke the key in
@@ -513,13 +569,14 @@ cd tbh-cli
 npm test
 ```
 
-31 offline checks, no network and no real key: config round-trip, manifest loading,
+34 offline checks, no network and no real key: config round-trip, manifest loading,
 plan building, drift detection, CRLF normalization, slug mapping, flag parsing,
 banner/box rendering (including ANSI-width alignment), `config set/unset`, the
 non-interactive "no key" path, a full deploy against an in-memory fake API
 (13 creates + 1 folder), idempotent re-deploy, `--only`, `--dry-run`, drift update,
 `pull` round-trip, `--version` / `help` smoke tests, the web UI's session-token gate,
-project discovery, the `bot_token` stripping guard, "create a bot then load the whole
+project discovery (including nested folders), `tbh link` / `tbh unlink` with a deploy
+from an unrelated directory, the `bot_token` stripping guard, "create a bot then load the whole
 project into it" (13 commands + 1 folder), the readiness retry for a brand-new bot,
 the full `tbh new` flow (create → deploy → activate → default bot), the `--json`
 deploy document consumed by the VS Code extension, the command-payload whitelist
