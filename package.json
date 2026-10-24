@@ -1,0 +1,19 @@
+﻿{
+  "name": "tbh-cli",
+  "version": "1.4.0",
+  "description": "TeleBotHost CLI - deploy and pull TBL command projects",
+  "author": "nepcoder (https://t.me/nepcoder)",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "tbh": "bin/tbh.js"
+  },
+  "main": "src/cli.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "tbh": "node bin/tbh.js",
+    "test": "node test/run.js"
+  }
+}

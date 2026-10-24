@@ -1,0 +1,1861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>TBH Console</title>
+<style>
+  :root {
+    --bg: #050506;
+    --glass: rgba(255, 255, 255, .055);
+    --glass-2: rgba(255, 255, 255, .085);
+    --line: rgba(255, 255, 255, .12);
+    --line-2: rgba(255, 255, 255, .24);
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --faint: #71717a;
+    --bad: #ff9b9b;
+    --radius: 18px;
+    --shadow: 0 22px 60px rgba(0, 0, 0, .55);
+    --blur: blur(22px) saturate(150%);
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html, body { min-height: 100%; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    color: var(--text);
+    font: 14px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+    background:
+      radial-gradient(900px 620px at 10% -12%, rgba(255, 255, 255, .12), transparent 62%),
+      radial-gradient(760px 540px at 96% 3%, rgba(255, 255, 255, .08), transparent 58%),
+      radial-gradient(680px 520px at 50% 108%, rgba(255, 255, 255, .06), transparent 62%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: #fff; color: #08080a; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .14);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .26); background-clip: content-box; }
+
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  button {
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .06);
+    border-radius: 12px;
+    padding: 9px 14px;
+    transition: background .15s, border-color .15s, transform .05s, opacity .15s;
+  }
+  button:hover:not(:disabled) { background: rgba(255, 255, 255, .13); border-color: var(--line-2); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  button.primary {
+    background: #fff;
+    border-color: #fff;
+    color: #08080a;
+    font-weight: 650;
+  }
+  button.primary:hover:not(:disabled) { background: #e6e6e8; border-color: #e6e6e8; }
+
+  button.danger {
+    color: var(--bad);
+    border-color: rgba(255, 130, 130, .32);
+    background: rgba(255, 90, 90, .07);
+  }
+  button.danger:hover:not(:disabled) {
+    background: rgba(255, 90, 90, .14);
+    border-color: rgba(255, 130, 130, .5);
+  }
+
+  button.ghost { background: transparent; }
+  button.mini { padding: 5px 10px; font-size: 12px; border-radius: 9px; }
+
+  input[type=text], input[type=password], select, textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  input::placeholder, textarea::placeholder { color: var(--faint); }
+  input[type=text]:focus, input[type=password]:focus, select:focus, textarea:focus {
+    border-color: rgba(255, 255, 255, .5);
+    background: rgba(255, 255, 255, .075);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, .07);
+  }
+  input[type=text]:disabled, textarea:disabled, select:disabled { opacity: .55; }
+
+  input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 17px;
+    height: 17px;
+    flex: none;
+    margin: 0;
+    border: 1px solid var(--line-2);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, .05);
+    display: inline-grid;
+    place-content: center;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  input[type=checkbox]:checked { background: #fff; border-color: #fff; }
+  input[type=checkbox]:checked::after {
+    content: "✓";
+    color: #08080a;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  input[type=checkbox]:disabled { opacity: .4; cursor: not-allowed; }
+
+  .mono { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; }
+  .spacer { flex: 1; }
+
+  /* ---------------- top bar ---------------- */
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px clamp(14px, 3vw, 26px);
+    border-bottom: 1px solid var(--line);
+    background: rgba(7, 7, 9, .55);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .brand { font-weight: 800; letter-spacing: .6px; font-size: 15px; white-space: nowrap; }
+  .brand span { color: var(--faint); font-weight: 500; letter-spacing: .3px; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12.5px;
+    background: rgba(255, 255, 255, .04);
+    white-space: nowrap;
+  }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
+  .chip .dot.on { background: #fff; box-shadow: 0 0 9px rgba(255, 255, 255, .9); }
+
+  .menu-btn { display: none; padding: 8px 11px; }
+
+  /* ---------------- layout ---------------- */
+
+  main { width: min(1440px, 100%); margin: 0 auto; padding: 18px clamp(14px, 3vw, 26px) 48px; }
+
+  .app { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; }
+
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .pad { padding: clamp(16px, 3vw, 24px); }
+
+  .sidebar {
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 104px);
+    min-height: 360px;
+    overflow: hidden;
+  }
+
+  .side-head {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 0;
+  }
+  .side-title { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+  .search { padding: 12px; border-bottom: 1px solid var(--line); }
+
+  .botlist { flex: 1; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 7px; }
+
+  .bot {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 11px 12px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, .03);
+  }
+  .bot:hover { border-color: var(--line); background: rgba(255, 255, 255, .075); }
+  .bot.active {
+    border-color: rgba(255, 255, 255, .42);
+    background: rgba(255, 255, 255, .12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+  }
+  .bot .row1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .bot .name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bot .sub { color: var(--faint); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .pills { margin-left: auto; display: flex; gap: 5px; flex: none; }
+  .pill {
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .pill.on { color: #fff; border-color: rgba(255, 255, 255, .38); background: rgba(255, 255, 255, .1); }
+  .pill.off { color: var(--faint); }
+  .pill.def { color: #08080a; background: #fff; border-color: #fff; font-weight: 700; }
+
+  .side-foot { padding: 10px 16px; border-top: 1px solid var(--line); color: var(--faint); font-size: 11.5px; }
+
+  .scrim { display: none; }
+
+  /* ---------------- content ---------------- */
+
+  .content { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .04);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  .tab:hover:not(.active) { background: rgba(255, 255, 255, .09); }
+  .tab.active { background: #fff; color: #08080a; border-color: #fff; font-weight: 650; }
+
+  .title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .title-text { min-width: 0; }
+  .title h2 { margin: 0; font-size: clamp(17px, 2.4vw, 21px); font-weight: 680; letter-spacing: -.01em; word-break: break-word; }
+  .title .id { color: var(--faint); font-size: 12.5px; margin-top: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .card {
+    background: rgba(255, 255, 255, .045);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .card .k { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .9px; }
+  .card .v { font-size: 17px; font-weight: 650; margin-top: 3px; word-break: break-word; }
+
+  .section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .section h3 { margin: 0 0 6px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .9px; color: var(--muted); font-weight: 600; }
+  .section p { margin: 0 0 12px; color: var(--muted); font-size: 13px; max-width: 72ch; }
+
+  .danger-zone {
+    margin-top: 24px;
+    padding: 16px;
+    border: 1px solid rgba(255, 130, 130, .26);
+    border-radius: 14px;
+    background: rgba(255, 90, 90, .04);
+  }
+  .danger-zone h3 { color: var(--bad); }
+
+  .inline-form { display: flex; gap: 10px; flex-wrap: wrap; }
+  .inline-form input { flex: 1 1 220px; width: auto; }
+
+  .empty { color: var(--faint); text-align: center; padding: 40px 20px; font-size: 13px; }
+
+  .note {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .04);
+    color: var(--muted);
+    border-radius: 12px;
+    padding: 11px 13px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+  .note b { color: var(--text); }
+  .note.ok { border-color: rgba(255, 255, 255, .32); color: #ececee; }
+  .note.bad { border-color: rgba(255, 130, 130, .42); color: var(--bad); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255, 255, 255, .2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: -2px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------------- commands list ---------------- */
+
+  .cmd-tools { margin-bottom: 12px; }
+  .cmd-tools input { padding: 10px 13px; }
+
+  .cmd-bulk {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .03);
+    margin-bottom: 12px;
+  }
+  .checkline { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; font-size: 12.5px; color: var(--muted); user-select: none; }
+
+  .cmd-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .cmd-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .03);
+  }
+  .cmd-row:hover { background: rgba(255, 255, 255, .07); border-color: var(--line); }
+
+  .cmd-open {
+    min-width: 0;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cmd-open:hover:not(:disabled) { background: none; border: 0; }
+  .cmd-name { font-size: 13.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmd-meta { color: var(--faint); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmd-size { color: var(--faint); font-size: 11.5px; white-space: nowrap; }
+  .cmd-acts { display: flex; gap: 6px; }
+
+  .scroll { max-height: 62vh; overflow: auto; }
+
+  .plan-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+    font-size: 13px;
+  }
+  .plan-row:last-child { border-bottom: none; }
+  .mark { width: 18px; text-align: center; font-weight: 700; }
+  .m-create { color: #fff; }
+  .m-update { color: var(--muted); }
+  .m-same { color: var(--faint); }
+
+  .logline {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12.5px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+    word-break: break-word;
+  }
+  .logline.err { color: var(--bad); }
+  .logline:last-child { border-bottom: none; }
+
+  /* ---------------- editor ---------------- */
+
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field > label, .field-label {
+    font-size: 10.5px;
+    letter-spacing: .9px;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+  }
+  .field.full { grid-column: 1 / -1; }
+
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .04);
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--muted);
+    user-select: none;
+  }
+  .toggle:hover { background: rgba(255, 255, 255, .08); }
+  .toggle input { width: 15px; height: 15px; }
+
+  .code {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    min-height: 380px;
+    resize: vertical;
+    tab-size: 2;
+    white-space: pre;
+    overflow: auto;
+    background: rgba(0, 0, 0, .35);
+  }
+  .code-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: var(--faint);
+    font-size: 11.5px;
+    margin-top: 6px;
+  }
+
+  /* ---------------- toast ---------------- */
+
+  .toast-wrap {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    z-index: 60;
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    background: rgba(20, 20, 24, .88);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 11px 15px;
+    max-width: min(440px, 100%);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .6);
+    animation: slideIn .18s ease-out;
+    font-size: 13px;
+  }
+  .toast.err { border-color: rgba(255, 120, 120, .45); color: var(--bad); }
+  .toast.ok { border-color: rgba(255, 255, 255, .35); }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } }
+
+  /* ---------------- login ---------------- */
+
+  .login { max-width: 560px; margin: clamp(28px, 8vh, 90px) auto 0; }
+  .login .panel { padding: clamp(20px, 4vw, 30px); }
+  .login h1 { margin: 0 0 6px; font-size: clamp(19px, 3vw, 23px); }
+  .login p { color: var(--muted); margin: 0 0 18px; font-size: 13.5px; }
+  .login .row { display: flex; gap: 10px; margin-top: 12px; }
+  .login .hint { color: var(--faint); font-size: 12px; margin-top: 16px; line-height: 1.7; }
+  .login .hint code { color: var(--text); }
+
+  .banner {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: clamp(7px, 1.6vw, 10px);
+    line-height: 1.15;
+    white-space: pre;
+    color: rgba(255, 255, 255, .85);
+    margin-bottom: 18px;
+  }
+
+  /* ---------------- dialogs ---------------- */
+
+  dialog {
+    background: rgba(14, 14, 17, .9);
+    backdrop-filter: blur(26px) saturate(140%);
+    -webkit-backdrop-filter: blur(26px) saturate(140%);
+    color: var(--text);
+    border: 1px solid var(--line-2);
+    border-radius: 20px;
+    padding: clamp(18px, 3vw, 26px);
+    width: min(560px, 94vw);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .7);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .62); backdrop-filter: blur(4px); }
+  dialog h3 { margin: 0 0 6px; font-size: 18px; }
+  dialog p { color: var(--muted); margin: 0 0 14px; font-size: 13px; }
+  dialog .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  dialog label.field-label { display: block; margin-bottom: 6px; }
+
+  .switch { display: flex; align-items: center; gap: 9px; margin-top: 12px; cursor: pointer; font-size: 13px; }
+  .switch input { width: 16px; height: 16px; }
+
+  /* ---------------- responsive ---------------- */
+
+  @media (max-width: 700px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .code { min-height: 300px; font-size: 12px; }
+    .cmd-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .cmd-size { display: none; }
+  }
+
+  @media (max-width: 980px) {
+    .app { grid-template-columns: 1fr; }
+    .menu-btn { display: inline-flex; }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 45;
+      width: min(340px, 86vw);
+      height: 100dvh;
+      min-height: 0;
+      border-radius: 0 22px 22px 0;
+      transform: translateX(-106%);
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1);
+      background: rgba(10, 10, 13, .93);
+    }
+    .sidebar.open { transform: none; }
+
+    .side-head { display: flex; }
+
+    .scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 44;
+      background: rgba(0, 0, 0, .55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .scrim.show { opacity: 1; pointer-events: auto; }
+  }
+
+  @media (max-width: 640px) {
+    .topbar { gap: 8px; }
+    #connChip { display: none; }
+    .topbar button { padding: 8px 11px; font-size: 12.5px; }
+    .title { gap: 8px; }
+    .cmd-acts .mini { padding: 5px 8px; }
+    .toast-wrap { right: 10px; bottom: 10px; left: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="ghost menu-btn" id="menuBtn" aria-label="Open bot list" hidden>☰</button>
+  <div class="brand">TBH <span>Console</span></div>
+  <div class="chip" id="connChip"><span class="dot"></span><span id="connText">not signed in</span></div>
+  <div class="spacer"></div>
+  <button class="ghost" id="addBotBtn" hidden>+ New bot</button>
+  <button class="ghost" id="signOutBtn" hidden>Sign out</button>
+</header>
+
+<main>
+  <section id="loginView" class="login" hidden>
+    <div class="panel">
+      <pre class="banner">████████╗██████╗ ██╗  ██╗
+╚══██╔══╝██╔══██╗██║  ██║
+   ██║   ██████╔╝███████║
+   ██║   ██╔══██╗██╔══██║
+   ██║   ██████╔╝██║  ██║
+   ╚═╝   ╚═════╝ ╚═╝  ╚═╝</pre>
+      <h1>Connect your account</h1>
+      <p>Paste a TeleBotHost Developer API key. It is stored in your local config file and only sent to api.telebothost.com.</p>
+
+      <input id="keyInput" type="password" placeholder="sk_… or pub_…" autocomplete="off" spellcheck="false" />
+      <div class="row">
+        <button class="primary" id="loginBtn">Verify &amp; save</button>
+      </div>
+
+      <div class="note" style="margin-top:16px;margin-bottom:0">
+        <b>pub_</b> keys are read-only — you can browse and read code, but editing needs an <b>sk_</b> key.
+      </div>
+
+      <div class="hint">
+        Create a key: <code>console.telebothost.com</code> → Developer API.<br />
+        Prefer the terminal? <code>tbh login</code> writes the same config file.
+      </div>
+    </div>
+  </section>
+
+  <section id="appView" class="app" hidden>
+    <div class="scrim" id="scrim"></div>
+
+    <aside class="panel sidebar" id="sidebar">
+      <div class="side-head">
+        <span class="side-title">Bots</span>
+        <button class="ghost mini" id="closeSidebar" aria-label="Close bot list">✕</button>
+      </div>
+      <div class="search">
+        <input id="search" type="text" placeholder="Search by name or @username…" />
+      </div>
+      <div class="botlist" id="botList"></div>
+      <div class="side-foot" id="botCount"></div>
+    </aside>
+
+    <div class="content">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="commands">Commands</button>
+        <button class="tab" data-tab="deploy">Deploy</button>
+        <button class="tab" data-tab="logs">Logs</button>
+      </div>
+      <div class="panel pad" id="panel">
+        <div class="empty">Pick a bot to get started.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<dialog id="addBotDialog">
+  <h3>Register a new bot</h3>
+  <p>This is the only place a <b>bot token</b> is needed — it comes from <b>@BotFather</b>, not from TeleBotHost.
+     Deploying to an existing bot never needs it.</p>
+
+  <label class="field-label" for="botToken">BotFather token</label>
+  <input id="botToken" type="password" placeholder="123456789:AAH…" autocomplete="off" spellcheck="false" />
+
+  <div id="botProjectWrap" style="margin-top:14px" hidden>
+    <label class="field-label" for="botProject">Load commands from</label>
+    <select id="botProject" style="margin-top:6px"></select>
+
+    <label class="switch">
+      <input id="botDeploy" type="checkbox" checked />
+      <span>Deploy these commands to the new bot automatically</span>
+    </label>
+    <div id="botDeployHint" class="note" style="margin:10px 0 0">
+      Creates the bot, waits for it, then uploads every command.
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="ghost" id="addBotCancel">Cancel</button>
+    <button class="primary" id="addBotConfirm">Register bot</button>
+  </div>
+</dialog>
+
+<dialog id="confirmDialog">
+  <h3 id="confirmTitle">Are you sure?</h3>
+  <p id="confirmText"></p>
+
+  <div id="confirmFieldWrap" hidden>
+    <label class="field-label" id="confirmLabel" for="confirmInput">Type to confirm</label>
+    <input id="confirmInput" type="text" autocomplete="off" spellcheck="false" />
+  </div>
+
+  <div class="row">
+    <button class="ghost" id="confirmCancel">Cancel</button>
+    <button class="danger" id="confirmOk">Confirm</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+
+const S = {
+  state: null,
+  bots: [],
+  selected: null,
+  tab: "overview",
+  filter: "",
+  cmdFilter: "",
+  commands: [],
+  folders: [],
+  checked: new Set(),
+  editor: null,
+  deployLog: null,
+  deployProject: ""
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+}[c]));
+
+/* ---------------- plumbing ---------------- */
+
+async function req(path, options) {
+  const opts = options || {};
+  const res = await fetch("/api/" + path, {
+    method: opts.method || (opts.body ? "POST" : "GET"),
+    headers: { "Content-Type": "application/json", "X-Tbh-Token": TOKEN },
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+
+  let data;
+  try { data = await res.json(); } catch (e) { data = { ok: false, error: "Bad response from server" }; }
+
+  if (!data.ok) {
+    const err = new Error(data.error || ("HTTP " + res.status));
+    err.hint = data.hint;
+    err.status = res.status;
+
+    /* A revoked or replaced key must send you back to the sign-in card. */
+    if (res.status === 401 && path !== "login") showLogin();
+
+    throw err;
+  }
+  return data;
+}
+
+function toast(message, kind) {
+  const el = document.createElement("div");
+  el.className = "toast " + (kind || "");
+  el.textContent = message;
+  $("toasts").appendChild(el);
+  setTimeout(() => el.remove(), kind === "err" ? 8000 : 4000);
+}
+
+function fail(e) {
+  toast(e && e.message ? e.message : String(e), "err");
+  if (e && e.hint) toast(e.hint, "err");
+}
+
+function fmtSize(n) {
+  const v = Number(n) || 0;
+  if (v < 1024) return v + " B";
+  if (v < 1024 * 1024) return (v / 1024).toFixed(1) + " KB";
+  return (v / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+function codeBytes(text) {
+  const s = String(text || "");
+  try { return new TextEncoder().encode(s).length; } catch (e) { return s.length; }
+}
+
+function isReadOnly() {
+  return !!(S.state && S.state.readOnly);
+}
+
+function showLogin() {
+  $("loginView").hidden = false;
+  $("appView").hidden = true;
+  $("addBotBtn").hidden = true;
+  $("signOutBtn").hidden = true;
+  $("menuBtn").hidden = true;
+  $("connText").textContent = "not signed in";
+  $("connChip").querySelector(".dot").classList.remove("on");
+  closeSidebar();
+}
+
+function openSidebar() {
+  $("sidebar").classList.add("open");
+  $("scrim").classList.add("show");
+}
+
+function closeSidebar() {
+  $("sidebar").classList.remove("open");
+  $("scrim").classList.remove("show");
+}
+
+function syncTabs() {
+  $("tabs").querySelectorAll(".tab").forEach((t) => {
+    t.classList.toggle("active", t.dataset.tab === S.tab);
+  });
+}
+
+/* ---------------- auth / bots ---------------- */
+
+async function loadState() {
+  const data = await req("state");
+  S.state = data;
+
+  if (!data.hasKey) {
+    showLogin();
+    return;
+  }
+
+  $("loginView").hidden = true;
+  $("appView").hidden = false;
+  $("addBotBtn").hidden = false;
+  $("signOutBtn").hidden = false;
+  $("menuBtn").hidden = false;
+  $("connText").textContent = data.keyMask + (data.readOnly ? " · read-only" : "");
+  $("connChip").querySelector(".dot").classList.add("on");
+
+  if (!S.bots.length) await loadBots();
+  else renderBotList();
+
+  if (!S.selected && S.bots.length) {
+    const preferred = S.bots.find((b) => String(b.bot_id) === String(data.defaultBot)) || S.bots[0];
+    if (preferred) return selectBot(preferred.bot_id, true);
+  }
+
+  if (S.selected) renderPanel();
+}
+
+async function loadBots() {
+  $("botList").innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+  try {
+    const data = await req("bots");
+    S.bots = data.bots || [];
+    renderBotList();
+  } catch (e) {
+    $("botList").innerHTML = '<div class="empty">Could not load bots</div>';
+    fail(e);
+  }
+}
+
+function renderBotList() {
+  const needle = S.filter.trim().toLowerCase();
+  const filtered = needle
+    ? S.bots.filter((b) =>
+        String(b.name || "").toLowerCase().includes(needle) ||
+        String(b.bot_username || "").toLowerCase().includes(needle) ||
+        String(b.bot_id).includes(needle))
+    : S.bots;
+
+  $("botCount").textContent = S.bots.length
+    ? S.bots.length + " bot" + (S.bots.length === 1 ? "" : "s") + " on this account"
+    : "No bots yet";
+
+  if (!filtered.length) {
+    $("botList").innerHTML = '<div class="empty">' +
+      (S.bots.length ? "No bot matches that search." : "No bots on this account yet.") + "</div>";
+    return;
+  }
+
+  const MAX = 300;
+  const shown = filtered.slice(0, MAX);
+
+  $("botList").innerHTML = shown.map((b) => {
+    const active = S.selected && String(S.selected.id) === String(b.bot_id) ? " active" : "";
+    const on = b.status === 1;
+    const isDefault = S.state && String(S.state.defaultBot) === String(b.bot_id);
+    return '<button class="bot' + active + '" data-id="' + b.bot_id + '">' +
+      '<div class="row1"><span class="name">' + (isDefault ? "▸ " : "") + esc(b.name || "Untitled") + '</span>' +
+      '<span class="pills">' +
+      (isDefault ? '<span class="pill def">default</span>' : "") +
+      '<span class="pill ' + (on ? "on" : "off") + '">' + (on ? "online" : "stopped") + "</span>" +
+      "</span></div>" +
+      '<div class="sub">' + (b.bot_username ? "@" + esc(b.bot_username) : "no username") +
+      " · #" + b.bot_id + " · " + (b.commands_count == null ? "?" : b.commands_count) + " cmds</div></button>";
+  }).join("") + (filtered.length > MAX
+    ? '<div class="empty" style="padding:14px">… and ' + (filtered.length - MAX) + " more — refine the search.</div>"
+    : "");
+
+  $("botList").querySelectorAll(".bot").forEach((el) => {
+    el.addEventListener("click", () => selectBot(Number(el.dataset.id)));
+  });
+}
+
+async function selectBot(id, silent) {
+  const bot = S.bots.find((b) => String(b.bot_id) === String(id)) || { bot_id: id, name: "Bot #" + id };
+  S.selected = { id: Number(id), name: bot.name, username: bot.bot_username, status: bot.status };
+  S.editor = null;
+  S.checked = new Set();
+  S.cmdFilter = "";
+  closeSidebar();
+  renderBotList();
+
+  try {
+    await req("use", { body: { botId: S.selected.id } });
+    if (S.state) S.state.defaultBot = S.selected.id;
+    renderBotList();
+  } catch (e) { /* remembering the default is a nicety, not a requirement */ }
+
+  renderPanel();
+}
+
+/* ---------------- panels ---------------- */
+
+function renderPanel() {
+  if (!S.selected) {
+    $("panel").innerHTML = '<div class="empty">Pick a bot on the left.</div>';
+    return;
+  }
+  if (S.tab === "overview") return renderOverview();
+  if (S.tab === "commands") return S.editor ? renderEditor() : renderCommands();
+  if (S.tab === "deploy") return renderDeploy();
+  if (S.tab === "logs") return renderLogs();
+}
+
+async function renderOverview() {
+  const id = S.selected.id;
+  $("panel").innerHTML = '<div class="title"><div class="title-text"><h2>' + esc(S.selected.name) +
+    '</h2><div class="id">#' + id + '</div></div></div><div class="empty"><span class="spinner"></span></div>';
+
+  try {
+    const [botRes, statRes] = await Promise.all([
+      req("bot/" + id),
+      req("bot/" + id + "/analytics").catch(() => ({ analytics: {} }))
+    ]);
+
+    if (!S.selected || S.selected.id !== id) return;
+
+    const bot = botRes.bot || {};
+    const stat = statRes.analytics || {};
+    const on = bot.status === 1;
+    const name = bot.bot_name || bot.name || S.selected.name;
+
+    const cards = [
+      ["Status", on ? "online" : "stopped"],
+      ["Commands", bot.commands_count == null ? "—" : bot.commands_count],
+      ["Users", stat.total_users == null ? "—" : stat.total_users],
+      ["Active 24h", stat.active_24h == null ? "—" : stat.active_24h],
+      ["TBL", bot.tbl_var == null ? "—" : bot.tbl_var]
+    ];
+
+    $("panel").innerHTML =
+      '<div class="title">' +
+        '<div class="title-text"><h2>' + esc(name) + '</h2>' +
+        '<div class="id">#' + id + (bot.bot_username ? " · @" + esc(bot.bot_username) : "") + '</div></div>' +
+        '<span class="spacer"></span>' +
+        (on ? '<button class="danger" id="stopBtn">Stop bot</button>'
+            : '<button class="primary" id="startBtn">Start bot</button>') +
+      '</div>' +
+      '<div class="grid">' + cards.map((c) =>
+        '<div class="card"><div class="k">' + esc(c[0]) + '</div><div class="v">' + esc(c[1]) + '</div></div>'
+      ).join("") + '</div>' +
+
+      '<div class="section">' +
+        '<h3>Rename</h3>' +
+        '<div class="inline-form">' +
+          '<input id="renameInput" type="text" value="' + esc(name) + '" spellcheck="false" />' +
+          '<button id="renameBtn"' + (isReadOnly() ? " disabled" : "") + '>Save name</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="section">' +
+        '<h3>Delivery</h3>' +
+        '<p>Deploying needs only your API key and this bot id. A BotFather token is asked for only when registering a brand-new bot.</p>' +
+      '</div>' +
+
+      '<div class="danger-zone">' +
+        '<h3>Danger zone</h3>' +
+        '<p>Deleting the bot removes it from TeleBotHost together with its commands, storage and users. This cannot be undone from the console.</p>' +
+        '<button class="danger" id="deleteBotBtn"' + (isReadOnly() ? " disabled" : "") + '>Delete bot #' + id + '</button>' +
+      '</div>';
+
+    if ($("startBtn")) $("startBtn").onclick = () => toggleBot(id, 1);
+    if ($("stopBtn")) $("stopBtn").onclick = () => toggleBot(id, 0);
+    $("renameBtn").onclick = renameBot;
+    $("deleteBotBtn").onclick = deleteBot;
+  } catch (e) {
+    if (!S.selected || S.selected.id !== id) return;
+    $("panel").innerHTML = '<div class="empty">Could not load this bot.</div>';
+    fail(e);
+  }
+}
+
+async function toggleBot(id, status) {
+  const btn = status === 1 ? $("startBtn") : $("stopBtn");
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+  try {
+    await req("bot/" + id + "/" + (status === 1 ? "start" : "stop"), { method: "POST", body: {} });
+    toast(status === 1 ? "Launch requested" : "Stop requested", "ok");
+    const b = S.bots.find((x) => String(x.bot_id) === String(id));
+    if (b) b.status = status;
+    renderBotList();
+    renderOverview();
+  } catch (e) {
+    fail(e);
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function renameBot() {
+  const id = S.selected.id;
+  const name = $("renameInput").value.trim();
+  if (!name) return toast("Name cannot be empty.", "err");
+
+  const btn = $("renameBtn");
+  btn.disabled = true;
+  try {
+    await req("bot/" + id, { method: "PATCH", body: { name: name } });
+    const b = S.bots.find((x) => String(x.bot_id) === String(id));
+    if (b) b.name = name;
+    if (S.selected) S.selected.name = name;
+    renderBotList();
+    toast("Renamed to " + name, "ok");
+    renderOverview();
+  } catch (e) {
+    fail(e);
+    btn.disabled = false;
+  }
+}
+
+async function deleteBot() {
+  const id = S.selected.id;
+  const bot = S.bots.find((b) => String(b.bot_id) === String(id)) || {};
+  const label = bot.name || ("Bot #" + id);
+
+  const ok = await askConfirm({
+    title: "Delete " + label + "?",
+    text: "Bot <b>#" + id + "</b> is removed from TeleBotHost together with its commands, storage and users. " +
+          "This cannot be undone from the console.",
+    okLabel: "Delete bot",
+    expect: String(id),
+    expectLabel: "Type the bot id (" + id + ") to confirm"
+  });
+  if (!ok) return;
+
+  try {
+    await req("bot/" + id, { method: "DELETE", body: {} });
+    toast("Deleted bot #" + id, "ok");
+
+    S.bots = S.bots.filter((b) => String(b.bot_id) !== String(id));
+    if (S.state && String(S.state.defaultBot) === String(id)) S.state.defaultBot = null;
+    S.selected = null;
+    S.commands = [];
+    S.checked.clear();
+    S.editor = null;
+    renderBotList();
+
+    const next = S.bots.find((b) => S.state && String(b.bot_id) === String(S.state.defaultBot)) || S.bots[0];
+    if (next) {
+      S.tab = "overview";
+      syncTabs();
+      await selectBot(next.bot_id, true);
+    } else {
+      renderPanel();
+    }
+  } catch (e) { fail(e); }
+}
+
+/* ---------------- commands ---------------- */
+
+function pruneChecked() {
+  const live = new Set(S.commands.map((c) => c.id));
+  Array.from(S.checked).forEach((id) => { if (!live.has(id)) S.checked.delete(id); });
+}
+
+function visibleCommands() {
+  const q = S.cmdFilter.trim().toLowerCase();
+  if (!q) return S.commands;
+  return S.commands.filter((c) =>
+    String(c.name || "").toLowerCase().includes(q) ||
+    String(c.folder || "").toLowerCase().includes(q) ||
+    String(c.aliases || "").toLowerCase().includes(q) ||
+    String(c.code || "").toLowerCase().includes(q));
+}
+
+async function renderCommands() {
+  const id = S.selected.id;
+  $("panel").innerHTML = '<div class="title"><div class="title-text"><h2>Commands</h2>' +
+    '<div class="id">bot #' + id + '</div></div></div><div class="empty"><span class="spinner"></span></div>';
+
+  try {
+    const data = await req("bot/" + id + "/commands");
+    if (!S.selected || S.selected.id !== id) return;
+    S.commands = data.commands || [];
+    S.folders = data.folders || [];
+    pruneChecked();
+    renderCommandShell();
+  } catch (e) {
+    if (!S.selected || S.selected.id !== id) return;
+    $("panel").innerHTML = '<div class="empty">Could not load commands.</div>';
+    fail(e);
+  }
+}
+
+function renderCommandShell() {
+  const id = S.selected.id;
+  const ro = isReadOnly();
+
+  $("panel").innerHTML =
+    '<div class="title">' +
+      '<div class="title-text"><h2>Commands</h2>' +
+      '<div class="id">bot #' + id + " · " + S.commands.length + ' command' + (S.commands.length === 1 ? "" : "s") + '</div></div>' +
+      '<span class="spacer"></span>' +
+      '<button class="ghost" id="refreshCmds">Refresh</button>' +
+      '<button class="primary" id="newCmdBtn"' + (ro ? " disabled" : "") + '>+ New command</button>' +
+    '</div>' +
+    (ro ? '<div class="note">This is a <b>pub_</b> key — read-only. Sign in with an <b>sk_</b> key to edit or delete commands.</div>' : "") +
+    '<div class="cmd-tools">' +
+      '<input id="cmdFilter" type="text" placeholder="Filter by name, folder or code…" value="' + esc(S.cmdFilter) + '" />' +
+    '</div>' +
+    '<div class="cmd-bulk">' +
+      '<label class="checkline"><input type="checkbox" id="checkAll"' + (ro ? " disabled" : "") + ' /><span>Select all</span></label>' +
+      '<span class="spacer"></span>' +
+      '<button class="ghost" id="delSelected" disabled>Delete selected</button>' +
+      '<button class="danger" id="delAll"' + (ro ? " disabled" : "") + '>Delete all</button>' +
+    '</div>' +
+    '<div class="cmd-list" id="cmdRows"></div>';
+
+  $("refreshCmds").onclick = () => renderCommands();
+  $("newCmdBtn").onclick = () => newCommand();
+  $("cmdFilter").oninput = (e) => { S.cmdFilter = e.target.value; renderCommandRows(); };
+  $("checkAll").onchange = (e) => {
+    S.checked = e.target.checked ? new Set(visibleCommands().map((c) => c.id)) : new Set();
+    renderCommandRows();
+  };
+  $("delSelected").onclick = () => deleteSelected();
+  $("delAll").onclick = () => deleteAllCommands();
+  $("cmdRows").addEventListener("click", onCommandRowClick);
+
+  renderCommandRows();
+}
+
+function onCommandRowClick(e) {
+  const check = e.target.closest(".cmd-check");
+  if (check) {
+    const id = Number(check.dataset.id);
+    if (check.checked) S.checked.add(id); else S.checked.delete(id);
+    updateBulkState();
+    return;
+  }
+
+  const open = e.target.closest("[data-open]");
+  if (open) return openEditor(Number(open.dataset.open));
+
+  const del = e.target.closest("[data-del]");
+  if (del) return deleteOne(Number(del.dataset.del));
+}
+
+function renderCommandRows() {
+  const rows = $("cmdRows");
+  if (!rows) return;
+
+  const ro = isReadOnly();
+
+  if (!S.commands.length) {
+    rows.innerHTML = '<div class="empty">This bot has no commands yet. Deploy a project, or create one with <b>+ New command</b>.</div>';
+    updateBulkState();
+    return;
+  }
+
+  const list = visibleCommands();
+  if (!list.length) {
+    rows.innerHTML = '<div class="empty">No command matches that filter.</div>';
+    updateBulkState();
+    return;
+  }
+
+  rows.innerHTML = list.map((c) => {
+    const size = fmtSize(codeBytes(c.code));
+    const meta = [c.folder || "no folder", size];
+    if (c.need_reply) meta.push("reply only");
+    if (c.allow_only_group) meta.push("groups only");
+    if (Number(c.is_web) === 1) meta.push("web");
+    if ((c.aliases || []).length) meta.push((c.aliases || []).length + " alias");
+
+    return '<div class="cmd-row">' +
+      '<input type="checkbox" class="cmd-check" data-id="' + c.id + '"' +
+        (S.checked.has(c.id) ? " checked" : "") + (ro ? " disabled" : "") + ' />' +
+      '<button class="cmd-open" data-open="' + c.id + '">' +
+        '<span class="cmd-name mono">' + esc(c.name) + '</span>' +
+        '<span class="cmd-meta">' + esc(meta.join(" · ")) + '</span>' +
+      '</button>' +
+      '<span class="cmd-size mono">' + esc(size) + '</span>' +
+      '<span class="cmd-acts">' +
+        '<button class="mini ghost" data-open="' + c.id + '">Edit</button>' +
+        '<button class="mini danger" data-del="' + c.id + '"' + (ro ? " disabled" : "") + '>Delete</button>' +
+      '</span>' +
+    '</div>';
+  }).join("");
+
+  updateBulkState();
+}
+
+function updateBulkState() {
+  const all = $("checkAll");
+  const btn = $("delSelected");
+  if (!btn) return;
+
+  const count = S.checked.size;
+  btn.disabled = count === 0 || isReadOnly();
+  btn.textContent = count ? "Delete selected (" + count + ")" : "Delete selected";
+
+  if (all) {
+    const list = visibleCommands();
+    all.checked = list.length > 0 && list.every((c) => S.checked.has(c.id));
+    all.indeterminate = !all.checked && list.some((c) => S.checked.has(c.id));
+  }
+}
+
+async function deleteOne(commandId) {
+  const c = S.commands.find((x) => x.id === commandId);
+  if (!c) return;
+  if (isReadOnly()) return toast("Read-only key — cannot delete.", "err");
+
+  const ok = await askConfirm({
+    title: "Delete " + c.name + "?",
+    text: "The command is removed from bot #" + S.selected.id + " immediately.",
+    okLabel: "Delete command"
+  });
+  if (!ok) return;
+
+  try {
+    await req("bot/" + S.selected.id + "/command/" + commandId, { method: "DELETE", body: {} });
+    S.commands = S.commands.filter((x) => x.id !== commandId);
+    S.checked.delete(commandId);
+    toast("Deleted " + c.name, "ok");
+    renderCommandShell();
+    loadBots();
+  } catch (e) { fail(e); }
+}
+
+async function deleteSelected() {
+  const ids = Array.from(S.checked);
+  if (!ids.length) return;
+  if (isReadOnly()) return toast("Read-only key — cannot delete.", "err");
+
+  const ok = await askConfirm({
+    title: "Delete " + ids.length + " command" + (ids.length === 1 ? "" : "s") + "?",
+    text: "They are removed from bot #" + S.selected.id + " immediately. This cannot be undone from here.",
+    okLabel: "Delete " + ids.length
+  });
+  if (!ok) return;
+
+  try {
+    await req("bot/" + S.selected.id + "/commands", { method: "DELETE", body: { ids: ids } });
+    S.commands = S.commands.filter((c) => ids.indexOf(c.id) < 0);
+    S.checked.clear();
+    toast("Deleted " + ids.length + " command(s)", "ok");
+    renderCommandShell();
+    loadBots();
+  } catch (e) { fail(e); }
+}
+
+async function deleteAllCommands() {
+  if (!S.commands.length) return toast("There is nothing to delete.", "err");
+  if (isReadOnly()) return toast("Read-only key — cannot delete.", "err");
+
+  const ok = await askConfirm({
+    title: "Delete every command?",
+    text: "All <b>" + S.commands.length + "</b> commands on bot #" + S.selected.id + " will be removed. " +
+          "The bot stays registered, but it will not answer anything until you deploy again.",
+    okLabel: "Delete all",
+    expect: "DELETE",
+    expectLabel: "Type DELETE to confirm"
+  });
+  if (!ok) return;
+
+  try {
+    await req("bot/" + S.selected.id + "/commands", {
+      method: "DELETE",
+      body: { ids: S.commands.map((c) => c.id) }
+    });
+    toast("All commands deleted", "ok");
+    S.commands = [];
+    S.checked.clear();
+    renderCommandShell();
+    loadBots();
+  } catch (e) { fail(e); }
+}
+
+/* ---------------- editor ---------------- */
+
+function normalizeParse(value) {
+  const v = String(value || "").toLowerCase();
+  if (v === "html") return "HTML";
+  if (v === "markdown") return "Markdown";
+  if (v === "markdownv2") return "MarkdownV2";
+  return "";
+}
+
+function openEditor(commandId) {
+  const c = S.commands.find((x) => x.id === commandId);
+  if (!c) return;
+
+  S.editor = {
+    isNew: false,
+    id: c.id,
+    name: c.name || "",
+    code: c.code || "",
+    answer: c.answer || "",
+    keyboard: c.keyboard || "",
+    parse_mode: normalizeParse(c.parse_mode),
+    aliases: (c.aliases || []).slice(),
+    folder: c.folder || "",
+    need_reply: !!c.need_reply,
+    allow_only_group: !!c.allow_only_group,
+    case_insensitive: !!c.case_insensitive,
+    is_web: Number(c.is_web) === 1
+  };
+
+  renderEditor();
+  $("panel").scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function newCommand() {
+  if (isReadOnly()) return toast("Read-only key — sign in with sk_ to edit.", "err");
+
+  S.editor = {
+    isNew: true,
+    id: null,
+    name: "/",
+    code: "",
+    answer: "",
+    keyboard: "",
+    parse_mode: "",
+    aliases: [],
+    folder: "",
+    need_reply: false,
+    allow_only_group: false,
+    case_insensitive: false,
+    is_web: false
+  };
+
+  renderEditor();
+  $("panel").scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function field(id, label, control) {
+  return '<div class="field"><label for="' + id + '">' + esc(label) + '</label>' + control + "</div>";
+}
+
+function parseSelect(current) {
+  const options = [["", "(none)"], ["HTML", "HTML"], ["Markdown", "Markdown"], ["MarkdownV2", "MarkdownV2"]];
+  return '<select id="fParse">' + options.map((o) =>
+    '<option value="' + o[0] + '"' + (o[0] === current ? " selected" : "") + ">" + o[1] + "</option>"
+  ).join("") + "</select>";
+}
+
+function renderEditor() {
+  const ed = S.editor;
+  if (!ed || !S.selected) return;
+
+  const ro = isReadOnly();
+  const folders = Array.from(new Set(S.folders.map((f) => (typeof f === "string" ? f : f.name)).filter(Boolean)));
+
+  $("panel").innerHTML =
+    '<div class="title">' +
+      '<button class="ghost" id="editorBack">← Back</button>' +
+      '<div class="title-text"><h2>' + esc(ed.isNew ? "New command" : ed.name) + '</h2>' +
+        '<div class="id">' + (ed.isNew ? "not created yet" : "#" + ed.id) + " · bot #" + S.selected.id + '</div></div>' +
+      '<span class="spacer"></span>' +
+      (ed.isNew ? "" : '<button class="danger" id="editorDelete"' + (ro ? " disabled" : "") + '>Delete</button>') +
+      '<button class="primary" id="editorSave"' + (ro ? " disabled" : "") + '>Save</button>' +
+    '</div>' +
+    (ro ? '<div class="note">Read-only key — saving will be rejected by TeleBotHost.</div>' : "") +
+
+    '<div class="form-grid">' +
+      field("fName", "Name",
+        '<input id="fName" type="text" value="' + esc(ed.name) + '" placeholder="/start" spellcheck="false" autocomplete="off" />') +
+      field("fFolder", "Folder",
+        '<input id="fFolder" type="text" list="folderList" value="' + esc(ed.folder) + '" placeholder="(none)" spellcheck="false" autocomplete="off" />' +
+        '<datalist id="folderList">' + folders.map((f) => '<option value="' + esc(f) + '"></option>').join("") + "</datalist>") +
+      field("fParse", "Parse mode", parseSelect(ed.parse_mode)) +
+      field("fAliases", "Aliases",
+        '<input id="fAliases" type="text" value="' + esc(ed.aliases.join(", ")) + '" placeholder="begin, help" spellcheck="false" autocomplete="off" />') +
+      field("fAnswer", "Answer (auto-reply)",
+        '<textarea id="fAnswer" rows="2" placeholder="(empty)">' + esc(ed.answer) + "</textarea>") +
+      field("fKeyboard", "Keyboard",
+        '<input id="fKeyboard" type="text" value="' + esc(ed.keyboard) + '" placeholder="(empty)" spellcheck="false" autocomplete="off" />') +
+    '</div>' +
+
+    '<div class="toggles">' +
+      '<label class="toggle"><input id="fNeedReply" type="checkbox"' + (ed.need_reply ? " checked" : "") + (ro ? " disabled" : "") + ' /><span>Reply only</span></label>' +
+      '<label class="toggle"><input id="fGroup" type="checkbox"' + (ed.allow_only_group ? " checked" : "") + (ro ? " disabled" : "") + ' /><span>Groups only</span></label>' +
+      '<label class="toggle"><input id="fCase" type="checkbox"' + (ed.case_insensitive ? " checked" : "") + (ro ? " disabled" : "") + ' /><span>Case insensitive</span></label>' +
+      '<label class="toggle"><input id="fWeb" type="checkbox"' + (ed.is_web ? " checked" : "") + (ro ? " disabled" : "") + ' /><span>Web endpoint</span></label>' +
+    '</div>' +
+
+    '<div class="field full" style="margin-top:18px">' +
+      '<label for="codeInput">Code</label>' +
+      '<textarea id="codeInput" class="code" spellcheck="false" wrap="off"' + (ro ? " readonly" : "") +
+        ' placeholder="// TBL — top-level await is fine">' + esc(ed.code) + "</textarea>" +
+      '<div class="code-foot"><span id="codeStats"></span><span>Ctrl + S saves · Tab inserts two spaces</span></div>' +
+    '</div>';
+
+  const code = $("codeInput");
+
+  const syncStats = () => {
+    const text = code.value;
+    $("codeStats").textContent = text.split("\n").length + " lines · " +
+      fmtSize(codeBytes(text)) + " / 1.00 MB";
+  };
+
+  code.addEventListener("input", syncStats);
+  code.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
+    e.preventDefault();
+    const start = code.selectionStart;
+    const end = code.selectionEnd;
+    code.setRangeText("  ", start, end, "end");
+    syncStats();
+  });
+  syncStats();
+
+  $("editorBack").onclick = () => {
+    S.editor = null;
+    renderCommands();
+  };
+  $("editorSave").onclick = () => saveCommand();
+  if ($("editorDelete")) $("editorDelete").onclick = () => deleteCurrentCommand();
+}
+
+async function saveCommand() {
+  const ed = S.editor;
+  if (!ed || !S.selected) return;
+  if (isReadOnly()) return toast("Read-only key — cannot save.", "err");
+
+  const name = $("fName").value.trim();
+  if (!name) return toast("Give the command a name (for example /start).", "err");
+
+  const payload = {
+    name: name,
+    code: $("codeInput").value,
+    answer: $("fAnswer").value,
+    keyboard: $("fKeyboard").value,
+    parse_mode: $("fParse").value,
+    aliases: $("fAliases").value.split(",").map((s) => s.trim()).filter(Boolean),
+    folder: $("fFolder").value.trim() || null,
+    need_reply: $("fNeedReply").checked,
+    allow_only_group: $("fGroup").checked,
+    case_insensitive: $("fCase").checked,
+    is_web: $("fWeb").checked ? 1 : 0
+  };
+
+  const btn = $("editorSave");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> saving';
+
+  try {
+    if (ed.isNew) {
+      await req("bot/" + S.selected.id + "/commands", { body: payload });
+      toast("Created " + name, "ok");
+    } else {
+      await req("bot/" + S.selected.id + "/command/" + ed.id, { method: "PATCH", body: payload });
+      toast("Saved " + name, "ok");
+    }
+    S.editor = null;
+    S.checked.clear();
+    await renderCommands();
+    loadBots();
+  } catch (e) {
+    fail(e);
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+}
+
+async function deleteCurrentCommand() {
+  const ed = S.editor;
+  if (!ed || ed.isNew) return;
+  if (isReadOnly()) return toast("Read-only key — cannot delete.", "err");
+
+  const ok = await askConfirm({
+    title: "Delete " + ed.name + "?",
+    text: "The command is removed from bot #" + S.selected.id + " immediately.",
+    okLabel: "Delete command"
+  });
+  if (!ok) return;
+
+  try {
+    await req("bot/" + S.selected.id + "/command/" + ed.id, { method: "DELETE", body: {} });
+    toast("Deleted " + ed.name, "ok");
+    S.commands = S.commands.filter((c) => c.id !== ed.id);
+    S.editor = null;
+    await renderCommands();
+    loadBots();
+  } catch (e) { fail(e); }
+}
+
+/* ---------------- deploy ---------------- */
+
+async function renderDeploy() {
+  const id = S.selected.id;
+  const projects = (S.state && S.state.projects) || [];
+  const pending = S.deployLog;
+  const pendingDir = S.deployProject;
+  S.deployLog = null;
+
+  $("panel").innerHTML =
+    '<div class="title"><div class="title-text"><h2>Deploy</h2>' +
+      '<div class="id">project → bot #' + id + "</div></div></div>" +
+    (projects.length
+      ? '<div class="field"><label class="field-label" for="projSelect">Project</label>' +
+        '<select id="projSelect">' +
+        projects.map((p) => '<option value="' + esc(p.dir) + '">' + esc(p.name) +
+          " — " + p.commands + " commands</option>").join("") + "</select></div>" +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">' +
+          '<button id="diffBtn">Preview changes</button>' +
+          '<button class="primary" id="deployBtn"' + (isReadOnly() ? " disabled" : "") + '>Deploy</button>' +
+        "</div>" +
+        '<div id="planOut" style="margin-top:16px"></div>'
+      : '<div class="empty">No manifest.json found near this folder.<br />Run <code>tbh ui --dir &lt;project&gt;</code> from your bot project.</div>');
+
+  if (!projects.length) return;
+
+  if (pendingDir && projects.some((p) => p.dir === pendingDir)) $("projSelect").value = pendingDir;
+
+  $("diffBtn").onclick = () => runPlan(id);
+  $("deployBtn").onclick = () => runDeploy(id);
+
+  if (pending) renderDeployLog($("planOut"), pending);
+  else runPlan(id);
+}
+
+function renderDeployLog(out, res) {
+  const failures = res.failures || [];
+
+  out.innerHTML = '<div class="note ' + (res.ok ? "ok" : "bad") + '">' +
+    (res.ok ? "✔ " + res.applied + " change(s) applied" : "Finished with " + failures.length + " failure(s)") +
+    (res.project ? " · " + esc(res.project) : "") +
+    "</div>" +
+    (res.log || []).map((l) =>
+      '<div class="logline' + (l.kind === "error" ? " err" : "") + '">' +
+      (l.kind === "create" ? "created " : l.kind === "update" ? "updated " : l.kind === "folder" ? "folder  " : "failed  ") +
+      esc(l.text) + "</div>").join("");
+}
+
+async function runPlan(id) {
+  const dir = $("projSelect").value;
+  const out = $("planOut");
+  out.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+
+  try {
+    const plan = await req("plan", { body: { dir: dir, botId: id } });
+    const rows = [];
+
+    plan.creates.forEach((n) => rows.push(['<span class="mark m-create">+</span>', n, "create"]));
+    plan.updates.forEach((u) => rows.push(['<span class="mark m-update">~</span>', u.name, u.fields.join(", ")]));
+    plan.folders.forEach((f) => rows.push(['<span class="mark m-create">+</span>', f + "/", "folder"]));
+
+    if (!rows.length) {
+      out.innerHTML = '<div class="note ok">Already up to date — ' + plan.same +
+        " command(s) match the manifest.</div>";
+      return;
+    }
+
+    out.innerHTML =
+      '<div class="note">' +
+      plan.creates.length + " create · " + plan.updates.length + " update · " + plan.same + " unchanged" +
+      (plan.extra.length ? " · " + plan.extra.length + " remote-only" : "") +
+      "</div>" +
+      rows.map((r) => '<div class="plan-row">' + r[0] +
+        '<span class="mono" style="flex:1">' + esc(r[1]) + "</span>" +
+        '<span style="color:var(--faint)">' + esc(r[2]) + "</span></div>").join("") +
+      (plan.extra.length
+        ? '<div style="margin-top:10px;color:var(--faint);font-size:12px">remote-only (not in manifest): ' +
+          esc(plan.extra.join(", ")) + "</div>"
+        : "");
+  } catch (e) {
+    out.innerHTML = '<div class="note bad">' + esc(e.message) + "</div>";
+  }
+}
+
+async function runDeploy(id) {
+  const dir = $("projSelect").value;
+  const btn = $("deployBtn");
+  const out = $("planOut");
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> deploying';
+  out.innerHTML = "";
+  S.deployProject = dir;
+
+  try {
+    const res = await req("deploy", { body: { dir: dir, botId: id } });
+    renderDeployLog(out, res);
+    toast(res.ok ? "Deployed " + res.applied + " change(s)" : "Deploy had failures", res.ok ? "ok" : "err");
+    loadBots();
+  } catch (e) {
+    out.innerHTML = '<div class="note bad">' + esc(e.message) + "</div>";
+    fail(e);
+  } finally {
+    btn.disabled = isReadOnly();
+    btn.textContent = "Deploy";
+  }
+}
+
+/* ---------------- logs ---------------- */
+
+async function renderLogs() {
+  const id = S.selected.id;
+
+  $("panel").innerHTML =
+    '<div class="title"><div class="title-text"><h2>Logs</h2>' +
+      '<div class="id">bot #' + id + "</div></div>" +
+      '<span class="spacer"></span>' +
+      '<button id="refreshLogs" class="ghost">Refresh</button>' +
+      '<button id="clearLogs" class="danger"' + (isReadOnly() ? " disabled" : "") + '>Clear</button></div>' +
+    '<div id="logOut"><div class="empty"><span class="spinner"></span></div></div>';
+
+  $("refreshLogs").onclick = () => loadLogs(id);
+  $("clearLogs").onclick = async () => {
+    if (isReadOnly()) return toast("Read-only key — cannot clear logs.", "err");
+    const ok = await askConfirm({
+      title: "Delete all logs?",
+      text: "Every runtime log entry for bot #" + id + " will be removed.",
+      okLabel: "Clear logs"
+    });
+    if (!ok) return;
+    try {
+      await req("bot/" + id + "/logs", { method: "DELETE", body: {} });
+      toast("Logs cleared", "ok");
+      loadLogs(id);
+    } catch (e) { fail(e); }
+  };
+
+  loadLogs(id);
+}
+
+async function loadLogs(id) {
+  const out = $("logOut");
+  if (!out) return;
+  out.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+
+  try {
+    const data = await req("bot/" + id + "/logs");
+    if (!S.selected || S.selected.id !== id) return;
+
+    const logs = (data.logs || []).slice(0, 100);
+
+    if (!logs.length) {
+      out.innerHTML = '<div class="note ok">No logs — no runtime errors recorded.</div>';
+      return;
+    }
+
+    out.innerHTML = '<div class="scroll">' + logs.map((l) => {
+      const err = String(l.type || "").toLowerCase() === "error";
+      return '<div class="logline' + (err ? " err" : "") + '">' +
+        (err ? "ERROR " : "") + esc(l.command || "—") +
+        '<span style="color:var(--faint)"> · ' + esc(String(l.created_at || l.time || "").slice(0, 19)) + "</span>" +
+        (l.error_message ? '<div style="margin-top:3px">' + esc(String(l.error_message).slice(0, 400)) + "</div>" : "") +
+        "</div>";
+    }).join("") + "</div>";
+  } catch (e) {
+    if (!S.selected || S.selected.id !== id) return;
+    out.innerHTML = '<div class="empty">Could not load logs.</div>';
+    fail(e);
+  }
+}
+
+/* ---------------- confirm dialog ---------------- */
+
+function askConfirm(options) {
+  const o = options || {};
+
+  return new Promise((resolve) => {
+    const dlg = $("confirmDialog");
+    const input = $("confirmInput");
+    const ok = $("confirmOk");
+    const cancel = $("confirmCancel");
+    const need = o.expect == null ? null : String(o.expect);
+
+    $("confirmTitle").textContent = o.title || "Are you sure?";
+    $("confirmText").innerHTML = o.text || "";
+    ok.textContent = o.okLabel || "Confirm";
+    ok.className = "danger";
+    ok.disabled = need != null;
+
+    $("confirmFieldWrap").hidden = need == null;
+    input.value = "";
+    input.oninput = null;
+
+    if (need != null) {
+      $("confirmLabel").textContent = o.expectLabel || ('Type "' + need + '" to confirm');
+      input.placeholder = need;
+      input.oninput = () => { ok.disabled = input.value.trim() !== need; };
+    }
+
+    const cleanup = () => {
+      ok.onclick = null;
+      cancel.onclick = null;
+      dlg.oncancel = null;
+      input.oninput = null;
+      if (dlg.open) dlg.close();
+    };
+
+    ok.onclick = () => { cleanup(); resolve(true); };
+    cancel.onclick = () => { cleanup(); resolve(false); };
+    dlg.oncancel = (e) => { e.preventDefault(); cleanup(); resolve(false); };
+
+    if (dlg.open) dlg.close();
+    dlg.showModal();
+    if (need != null) setTimeout(() => input.focus(), 40);
+    else setTimeout(() => ok.focus(), 40);
+  });
+}
+
+/* ---------------- wiring ---------------- */
+
+$("loginBtn").onclick = async () => {
+  const key = $("keyInput").value.trim();
+  if (!key) return toast("Paste an API key first.", "err");
+
+  const btn = $("loginBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> verifying';
+
+  try {
+    const res = await req("login", { body: { key: key } });
+    $("keyInput").value = "";
+    toast("Connected — " + res.bots + " bot(s)", "ok");
+    if (res.readOnly) toast("pub_ key: read-only, edits will be rejected.", "err");
+    S.bots = [];
+    await loadState();
+  } catch (e) {
+    fail(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Verify & save";
+  }
+};
+
+$("keyInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") $("loginBtn").click();
+});
+
+$("signOutBtn").onclick = async () => {
+  const ok = await askConfirm({
+    title: "Sign out?",
+    text: "The saved API key is removed from this machine. Revoke it in the console if it may have leaked.",
+    okLabel: "Sign out"
+  });
+  if (!ok) return;
+
+  try {
+    await req("logout", { method: "POST", body: {} });
+    S.bots = [];
+    S.selected = null;
+    S.editor = null;
+    S.commands = [];
+    S.checked.clear();
+    await loadState();
+    toast("Signed out", "ok");
+  } catch (e) { fail(e); }
+};
+
+$("search").addEventListener("input", (e) => {
+  S.filter = e.target.value;
+  renderBotList();
+});
+
+$("tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab");
+  if (!btn) return;
+  S.tab = btn.dataset.tab;
+  syncTabs();
+  renderPanel();
+});
+
+$("menuBtn").onclick = () => openSidebar();
+$("closeSidebar").onclick = () => closeSidebar();
+$("scrim").onclick = () => closeSidebar();
+
+$("addBotBtn").onclick = () => {
+  const projects = (S.state && S.state.projects) || [];
+  $("botProjectWrap").hidden = projects.length === 0;
+
+  if (projects.length) {
+    $("botProject").innerHTML = projects.map((p) =>
+      '<option value="' + esc(p.dir) + '">' + esc(p.name) + " — " + p.commands + " commands</option>").join("");
+    $("botDeploy").checked = true;
+  }
+
+  $("addBotDialog").showModal();
+};
+
+$("botDeploy").addEventListener("change", (e) => {
+  $("botDeployHint").textContent = e.target.checked
+    ? "Creates the bot, waits for it, then uploads every command."
+    : "The bot will be created empty — deploy later from the Deploy tab.";
+});
+
+$("addBotCancel").onclick = () => $("addBotDialog").close();
+
+$("addBotConfirm").onclick = async () => {
+  const token = $("botToken").value.trim();
+  if (!token) return toast("Paste the BotFather token.", "err");
+
+  const withProject = !$("botProjectWrap").hidden && $("botDeploy").checked;
+  const dir = withProject ? $("botProject").value : "";
+
+  const btn = $("addBotConfirm");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> ' + (withProject ? "creating + deploying" : "registering");
+
+  try {
+    const res = await req("bots", { body: { token: token, dir: dir, deploy: withProject } });
+
+    $("botToken").value = "";
+    $("addBotDialog").close();
+
+    toast("Bot registered" + (res.bot && res.bot.bot_username ? " — @" + res.bot.bot_username : ""), "ok");
+
+    if (res.deploy) {
+      S.deployLog = res.deploy;
+      S.deployProject = res.deploy.project || dir;
+      if (res.deploy.ok) toast("Deployed " + res.deploy.applied + " command(s) to the new bot", "ok");
+      else toast("Created, but " + (res.deploy.failures || []).length + " command(s) failed — see the log", "err");
+    }
+
+    if (res.bot && res.bot.bot_id && S.state) S.state.defaultBot = res.bot.bot_id;
+
+    S.selected = null;
+    await loadBots();
+
+    if (res.bot && res.bot.bot_id) {
+      S.tab = res.deploy ? "deploy" : "overview";
+      syncTabs();
+      await selectBot(res.bot.bot_id, true);
+    }
+  } catch (e) {
+    fail(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Register bot";
+  }
+};
+
+/* Ctrl/Cmd+S saves while the editor is open. */
+document.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || String(e.key).toLowerCase() !== "s") return;
+  if (S.tab !== "commands" || !S.editor) return;
+  e.preventDefault();
+  if (!isReadOnly()) saveCommand();
+});
+
+/* Esc closes the mobile drawer. */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeSidebar();
+});
+
+loadState().catch((e) => {
+  $("loginView").hidden = false;
+  $("connText").textContent = "connection error";
+  fail(e);
+});
+</script>
+</body>
+</html>
